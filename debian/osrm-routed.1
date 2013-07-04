@@ -1,0 +1,56 @@
+.\" (C) Copyright 2013 Christopher Baines <chris@chris-desktop.home>,
+.TH OSRM-ROUTED 1 "July  4, 2013" osrm-routed "Open Source Routing Machine"
+.SH NAME
+osrm-routed \- the OSRM routing service
+.SH SYNOPSIS
+.B osrm
+.I server.ini
+.SH DESCRIPTION
+The Open Source Routing Machine (OSRM) is a high performance routing enigine for finding shortest paths in road networks.
+.PP
+\fBosrm-routed\fP starts the router, it uses then config file given, defaulting to server.ini in the current directory. Note that on Debian, this command is executed by the init file, so for a standard setup, it should not be nessacery to run it directly.
+.SH CONFIGURATION FILE
+Uses a key = value syntax. The table below gives the keys that can be used.
+
+.TS
+tab (@);
+l lx.
+Threads@T{
+Number of threads OSRM will use (default 8)
+T}
+IP@T{
+IP address that OSRM will use (default 0.0.0.0)
+T}
+Port@T{
+Port that OSRM will use (default 5000)
+T}
+hsgrData@T{
+OSRM Hierarchy (default suffix: osrm.hsgr)
+T}
+nodesData@T{
+Node map (default suffix: osrm.nodes)
+T}
+edgesData@T{
+Edge map (default suffix: osrm.edges)
+T}
+ramIndex@T{
+Stage 1 index (default suffix: osrm.ramIndex)
+e.g. \fBman\fR(7), \fBgroff\fR(7)
+T}
+fileIndex@T{
+Stage 2 index (default suffix: osrm.fileIndex)
+T}
+namesData@T{
+Road names (default suffix: osrm.names)
+T}
+.TE
+
+.SH FILES
+.TP
+.I /etc/osrm/server.ini
+The server configuration file used by the OSRM service
+
+.SH "SEE ALSO"
+.BR osrm (7),
+.BR osrm-extract (1),
+.BR osrm-prepare (1)

@@ -1,0 +1,22 @@
+.TH OSRM-EXTRACT 1 "July  4, 2013" osrm-extract "Open Source Routing Machine"
+.SH NAME
+osrm-extract \- generate OSRM routing data from OSM data
+.SH SYNOPSIS
+.B osrm-extract
+.I data
+[profile.lua]
+.SH DESCRIPTION
+\fBosrm-extract\fP takes OSM data, ether in a xml file, a bzipped xml or a pbf encoded file. Along with a profile (written in lua). It then creates three files, .osrm which contains the routing data, osrm.restrictions which contains turn restrictions, and .osrm.names which contains the names of the road.
+.SH PROFILES
+Profiles are written in lua, and describe how the osm data can be routed across. Several profiles are available in /etc/osrm/profiles
+.SH EXAMPLES
+Using the data file planet-latest.osm.pbf, and the profile /etc/osrm/profiles/car.lua, you would run:
+
+      osrm-extract planet-latest.osm.pbf /etc/osrm/profiles/car.lua
+
+This should then generate: planet-latest.osrm planet-latest.osrm.restrictions planet-latest.osrm.names
+The next step is to run the osrm-prepare tool.
+.SH SEE ALSO
+.BR osrm (7),
+.BR osrm-prepare (1),
+.BR osrm-routed (1)

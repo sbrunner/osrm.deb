@@ -1,0 +1,12 @@
+debian/tmp/usr/bin/osrm-routed /usr/bin/
+debian/tmp/usr/bin/osrm-prepare /usr/bin/
+debian/tmp/usr/bin/osrm-extract /usr/bin/
+debian/conffiles/server.ini /etc/osrm/
+debian/conffiles/extractor.ini /etc/osrm/
+debian/conffiles/contractor.ini /etc/osrm/
+debian/conffiles/car.lua /etc/osrm/profiles/
+debian/conffiles/foot.lua /etc/osrm/profiles/
+debian/conffiles/bicycle.lua /etc/osrm/profiles/
+debian/conffiles/testbot.lua /etc/osrm/profiles/
+debian/conffiles/turnbot.lua /etc/osrm/profiles/
+debian/conffiles/access.lua /etc/osrm/profiles/lib/

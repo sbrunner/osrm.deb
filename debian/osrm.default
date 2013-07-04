@@ -1,0 +1,2 @@
+# Location of the configuration file
+DAEMON_OPTS="/etc/osrm/server.ini"

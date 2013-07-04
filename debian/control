@@ -1,0 +1,35 @@
+Source: osrm
+Section: misc
+Priority: extra
+Maintainer: Debian GIS Project <pkg-grass-devel@lists.alioth.debian.org>
+Uploaders: Debian OpenStreetMap Team <pkg-osm-maint@lists.alioth.debian.org>,
+           Christopher Baines <cbaines8@gmail.com>
+Build-Depends: debhelper (>= 9.0.0), cmake, libboost-dev, libboost-filesystem-dev, libboost-thread-dev, libboost-system-dev, libboost-regex-dev, libstxxl-dev, libxml2-dev, libsparsehash-dev, libbz2-dev, zlib1g-dev, libzip-dev, libgomp1, libpng-dev, libprotoc7, libprotobuf-dev, protobuf-compiler, liblua5.1-0-dev, libluabind-dev, pkg-config, libosmpbf-dev, libgdal-dev
+Standards-Version: 3.9.4
+Homepage: http://project-osrm.org/
+Vcs-Git: git://git.debian.org/pkg-grass/osrm.git
+Vcs-Browser: http://git.debian.org/?p=pkg-grass/osrm.git
+
+Package: osrm
+Architecture: any
+Depends: ${shlibs:Depends}, ${misc:Depends}
+Suggests: osrm-tools
+Pre-Depends: adduser
+Description: high performance routing engine for shortest paths in road networks
+ The Open Source Routing Machine (OSRM) is a C++ implementation of a
+ high-performance routing engine for shortest paths in road networks.
+ .
+ OSRM is able to compute and output a shortest path between any origin
+ and destination within a few miliseconds.
+
+Package: osrm-tools
+Architecture: any
+Depends: ${shlibs:Depends}, ${misc:Depends}
+Enhances: osrm
+Description: tools for use with osrm
+ The Open Source Routing Machine (OSRM) is a C++ implementation of a
+ high-performance routing engine for shortest paths in road networks.
+ .
+ This package contains the component analisis (osrm-components) tool
+ which generates statistics and a shapefile for unroutable roads in the OSM
+ data.

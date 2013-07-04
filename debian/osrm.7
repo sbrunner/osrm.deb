@@ -1,0 +1,67 @@
+.TH OSRM 7 "July  4, 2013" osrm "Open Source Routing Machine"
+.SH NAME
+osrm \- high performance routing engine
+.SH SYNOPSIS
+.B osrm-extract
+.I data
+[profile.lua]
+.br
+.B osrm-prepare
+.I file.osrm
+.I file.osrm.resctictions
+.I profile.lua
+.br
+.B osrm-routed
+.I server.ini
+.br
+.B osrm-components
+.I data.osrm
+.I data.osrm.restrictions
+.SH DESCRIPTION
+The Open Source Routing Machine (OSRM) is a high performance routing engine for road networks.
+
+Firstly, you must take OSM data, and create the files that OSM uses. This is done through the use of the osrm-extract and osrm-prepare commands.
+.SH EXAMPLE
+The following example uses an osm file called planet-latest.osm.pbf, however this will work with raw osm data, or pbf data. The prefix for the osrm files will be planet-latest, this is taken from the name of the osm file, if you use a differently named file, you must change the prefix in the below commands. The files used will be placed in /var/cache/osrm, as this is the default location, as set in /etc/osrm/server.ini, the configuration file used by the osrm service.
+
+The latest planet file can be downloaded from the planet.openstreetmap.org site by using the following command (run in the /var/cache/osrm directory):
+
+      wget http://planet.openstreetmap.org/pbf/planet-latest.osm.pbf
+
+The following commands assume that the osm data is in the /var/lib/osrm directory.
+
+For this example, the profile /etc/osrm/profiles/car.lua will be used, but this can either be changed, or a different profile can be used. There are additional sample profiles available in /etc/osrm/profiles. To run the extraction, run:
+
+      osrm-extract planet-latest.osm.pbf /etc/osrm/profiles/car.lua
+
+Once finished, you should have the files planet-latest.osrm, planet-latest.osrm.names, planet-latest.osrm.restrictions present. You will also have some stxxl related files, but these are not directly related to osrm.
+
+To proceed, use osrm-prepare to generate the higherarchi:
+
+      osrm-prepare planet-latest.osrm planet-latest.osrm.restrictions /etc/osrm/profiles/car.lua
+
+In the working directory, you should now have in addition to the above files planet-latest.osrm.hsgr, planet-latest.osrm.edges, planet-latest.osrm.nodes, planet-latest.osrm.ramindex and planet-latest.osrm.fileIndex. You can then start the service.
+
+      service osrm restart
+
+If the service starts successfully, you should be able to use the API, if not, check the log file at /var/log.osrm/routed.log, and if nessacery, report a bug against the osrm package.
+.SH SERVER API
+The service api is similar to query strings for HTTP. Three types of query are possible:
+.TS
+tab (@);
+l lx.
+locate@T{
+Takes latitude and longitude and returns the nearest node in the data to that point.
+T}
+nearest@T{
+Takes lattitude and longitude and returns the nearest point on a street segment to that point.
+T}
+viaroute@T{
+Takes multiple latitude, longitude points, and returns a route from the first, through to the last.
+T}
+.TE
+.SH SEE ALSO
+.BR osrm-extract (1),
+.BR osrm-prepare (1),
+.BR osrm-routed (1),
+.BR osrm-components (1)

@@ -1,0 +1,4 @@
+debian/osrm.7
+debian/osrm-routed.1
+debian/osrm-extract.1
+debian/osrm-prepare.1
