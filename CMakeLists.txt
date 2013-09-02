@@ -160,9 +160,15 @@ if(WITH_TOOLS)
 		target_link_libraries(
 			osrm-components ${GDAL_LIBRARIES} ${Boost_LIBRARIES} UUID
 		)
+		install(TARGETS osrm-components RUNTIME DESTINATION bin)
 	endif(GDAL_FOUND)
 	add_executable ( osrm-cli Tools/simpleclient.cpp Util/GitDescription.cpp)
 	target_link_libraries( osrm-cli ${Boost_LIBRARIES} OSRM UUID )
     add_executable ( osrm-io-benchmark Tools/io-benchmark.cpp )
     target_link_libraries( osrm-io-benchmark ${Boost_LIBRARIES} )
 endif(WITH_TOOLS)
+
+install(TARGETS osrm-extract RUNTIME DESTINATION bin)
+install(TARGETS osrm-prepare RUNTIME DESTINATION bin)
+install(TARGETS osrm-routed RUNTIME DESTINATION bin)
+install(TARGETS OSRM LIBRARY DESTINATION lib)
