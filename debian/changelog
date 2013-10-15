@@ -1,3 +1,9 @@
+osrm (0.3.6-1~c2c+1) wheezy; urgency=low
+
+  * Update upstream release
+
+ -- Stéphane Brunner <stephane.brunner@camptocamp.com>  Tue, 15 Oct 2013 16:22:50 +0200
+
 osrm (0.3.4-1~c2c+5) wheezy; urgency=low
 
   * Fix attempt to perform arithmetic on global 'numberOfNodesInWay' (a nil value)
