@@ -1,0 +1,28 @@
+From: Debian GIS Project <pkg-grass-devel@lists.alioth.debian.org>
+Date: Mon, 2 Sep 2013 10:15:55 +0200
+Subject: [PATCH] add-cmake-install
+
+---
+ CMakeLists.txt |    5 +++++
+ 1 files changed, 5 insertions(+), 0 deletions(-)
+
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index 0d17236..ac94081 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -160,9 +160,14 @@ if(WITH_TOOLS)
+ 		target_link_libraries(
+ 			osrm-components ${GDAL_LIBRARIES} ${Boost_LIBRARIES} UUID
+ 		)
++		install(TARGETS osrm-components RUNTIME DESTINATION bin)
+ 	endif(GDAL_FOUND)
+ 	add_executable ( osrm-cli Tools/simpleclient.cpp Util/GitDescription.cpp)
+ 	target_link_libraries( osrm-cli ${Boost_LIBRARIES} OSRM UUID )
+     add_executable ( osrm-io-benchmark Tools/io-benchmark.cpp )
+     target_link_libraries( osrm-io-benchmark ${Boost_LIBRARIES} )
+ endif(WITH_TOOLS)
++
++install(TARGETS osrm-extract RUNTIME DESTINATION bin)
++install(TARGETS osrm-prepare RUNTIME DESTINATION bin)
++install(TARGETS osrm-routed RUNTIME DESTINATION bin)
+-- 
