@@ -4,7 +4,7 @@ Priority: extra
 Maintainer: Debian GIS Project <pkg-grass-devel@lists.alioth.debian.org>
 Uploaders: Debian OpenStreetMap Team <pkg-osm-maint@lists.alioth.debian.org>,
            Christopher Baines <cbaines8@gmail.com>
-Build-Depends: debhelper (>= 8), cmake, libboost-dev, libboost-filesystem-dev, libboost-thread-dev, libboost-system-dev, libboost-regex-dev, libstxxl-dev, libxml2-dev, libsparsehash-dev, libbz2-dev, zlib1g-dev, libzip-dev, libgomp1, libpng-dev, libprotoc7, libprotobuf-dev, protobuf-compiler, liblua5.1-0-dev, libluabind-dev, pkg-config, libosmpbf-dev, libgdal-dev
+Build-Depends: debhelper (>= 8), cmake, libboost-dev (>= 1.49), libboost-filesystem-dev, libboost-thread-dev, libboost-system-dev, libboost-regex-dev, libboost-program-options-dev, libstxxl-dev, libxml2-dev, libsparsehash-dev, libbz2-dev, zlib1g-dev, libzip-dev, libgomp1, libpng-dev, libprotoc7, libprotobuf-dev, protobuf-compiler, liblua5.1-0-dev, libluabind-dev, pkg-config, libosmpbf-dev, libgdal-dev
 Standards-Version: 3.9.4
 Homepage: http://project-osrm.org/
 Vcs-Git: git://git.debian.org/pkg-grass/osrm.git
