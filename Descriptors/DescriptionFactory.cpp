@@ -1,22 +1,29 @@
 /*
- open source routing machine
- Copyright (C) Dennis Luxen, others 2010
 
- This program is free software; you can redistribute it and/or modify
- it under the terms of the GNU AFFERO General Public License as published by
- the Free Software Foundation; either version 3 of the License, or
- any later version.
+Copyright (c) 2013, Project OSRM, Dennis Luxen, others
+All rights reserved.
 
- This program is distributed in the hope that it will be useful,
- but WITHOUT ANY WARRANTY; without even the implied warranty of
- MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- GNU General Public License for more details.
+Redistribution and use in source and binary forms, with or without modification,
+are permitted provided that the following conditions are met:
 
- You should have received a copy of the GNU Affero General Public License
- along with this program; if not, write to the Free Software
- Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
- or see http://www.gnu.org/licenses/agpl.txt.
- */
+Redistributions of source code must retain the above copyright notice, this list
+of conditions and the following disclaimer.
+Redistributions in binary form must reproduce the above copyright notice, this
+list of conditions and the following disclaimer in the documentation and/or
+other materials provided with the distribution.
+
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
+ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR
+ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
+(INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON
+ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+(INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+*/
 
 #include "DescriptionFactory.h"
 
@@ -32,11 +39,14 @@ inline double DescriptionFactory::RadianToDegree(const double radian) const {
         return radian * (180/M_PI);
 }
 
-double DescriptionFactory::GetBearing(const _Coordinate& A, const _Coordinate& B) const {
-    double deltaLong = DegreeToRadian(B.lon/100000. - A.lon/100000.);
+double DescriptionFactory::GetBearing(
+    const FixedPointCoordinate & A,
+    const FixedPointCoordinate & B
+) const {
+    double deltaLong = DegreeToRadian(B.lon/COORDINATE_PRECISION - A.lon/COORDINATE_PRECISION);
 
-    double lat1 = DegreeToRadian(A.lat/100000.);
-    double lat2 = DegreeToRadian(B.lat/100000.);
+    double lat1 = DegreeToRadian(A.lat/COORDINATE_PRECISION);
+    double lat2 = DegreeToRadian(B.lat/COORDINATE_PRECISION);
 
     double y = sin(deltaLong) * cos(lat2);
     double x = cos(lat1) * sin(lat2) - sin(lat1) * cos(lat2) * cos(deltaLong);
@@ -59,7 +69,7 @@ void DescriptionFactory::SetEndSegment(const PhantomNode & _targetPhantom) {
     pathDescription.push_back(SegmentInformation(_targetPhantom.location, _targetPhantom.nodeBasedEdgeNameID, 0, _targetPhantom.weight1, 0, true) );
 }
 
-void DescriptionFactory::AppendSegment(const _Coordinate & coordinate, const _PathData & data ) {
+void DescriptionFactory::AppendSegment(const FixedPointCoordinate & coordinate, const _PathData & data ) {
     if(1 == pathDescription.size() && pathDescription.back().location == coordinate) {
         pathDescription.back().nameID = data.nameID;
     } else {
@@ -91,7 +101,7 @@ void DescriptionFactory::Run(const SearchEngine &sEngine, const unsigned zoomLev
     /** starts at index 1 */
     pathDescription[0].length = 0;
     for(unsigned i = 1; i < pathDescription.size(); ++i) {
-        pathDescription[i].length = ApproximateDistanceByEuclid(pathDescription[i-1].location, pathDescription[i].location);
+        pathDescription[i].length = ApproximateEuclideanDistance(pathDescription[i-1].location, pathDescription[i].location);
     }
 
     double lengthOfSegment = 0;
@@ -123,7 +133,7 @@ void DescriptionFactory::Run(const SearchEngine &sEngine, const unsigned zoomLev
 //            		|| std::string::npos != string0.find(string1+" ;")
 //                    || std::string::npos != string0.find("; "+string1)
 //                    ){
-//                INFO("->next correct: " << string0 << " contains " << string1);
+//                SimpleLogger().Write() << "->next correct: " << string0 << " contains " << string1;
 //                for(; lastTurn != i; ++lastTurn)
 //                    pathDescription[lastTurn].nameID = pathDescription[i].nameID;
 //                pathDescription[i].turnInstruction = TurnInstructionsClass::NoTurn;
@@ -132,7 +142,7 @@ void DescriptionFactory::Run(const SearchEngine &sEngine, const unsigned zoomLev
 //                    || std::string::npos != string1.find(string0+" ;")
 //                    || std::string::npos != string1.find("; "+string0)
 //                    ){
-//                INFO("->prev correct: " << string1 << " contains " << string0);
+//                SimpleLogger().Write() << "->prev correct: " << string1 << " contains " << string0;
 //                pathDescription[i].nameID = pathDescription[i-1].nameID;
 //                pathDescription[i].turnInstruction = TurnInstructionsClass::NoTurn;
 //            }
@@ -153,36 +163,36 @@ void DescriptionFactory::Run(const SearchEngine &sEngine, const unsigned zoomLev
 
 
         if(TurnInstructionsClass::NoTurn != pathDescription[i].turnInstruction) {
-            //INFO("Turn after " << lengthOfSegment << "m into way with name id " << segment.nameID);
+            //SimpleLogger().Write() << "Turn after " << lengthOfSegment << "m into way with name id " << segment.nameID;
             assert(pathDescription[i].necessary);
             lengthOfSegment = 0;
             durationOfSegment = 0;
             indexOfSegmentBegin = i;
         }
     }
-    //    INFO("#segs: " << pathDescription.size());
+    //    SimpleLogger().Write() << "#segs: " << pathDescription.size();
 
     //Post-processing to remove empty or nearly empty path segments
-    if(FLT_EPSILON > pathDescription.back().length) {
-        //        INFO("#segs: " << pathDescription.size() << ", last ratio: " << targetPhantom.ratio << ", length: " << pathDescription.back().length);
+    if(std::numeric_limits<double>::epsilon() > pathDescription.back().length) {
+        //        SimpleLogger().Write() << "#segs: " << pathDescription.size() << ", last ratio: " << targetPhantom.ratio << ", length: " << pathDescription.back().length;
         if(pathDescription.size() > 2){
             pathDescription.pop_back();
             pathDescription.back().necessary = true;
             pathDescription.back().turnInstruction = TurnInstructions.NoTurn;
             targetPhantom.nodeBasedEdgeNameID = (pathDescription.end()-2)->nameID;
-            //            INFO("Deleting last turn instruction");
+            //            SimpleLogger().Write() << "Deleting last turn instruction";
         }
     } else {
         pathDescription[indexOfSegmentBegin].duration *= (1.-targetPhantom.ratio);
     }
-    if(FLT_EPSILON > pathDescription[0].length) {
+    if(std::numeric_limits<double>::epsilon() > pathDescription[0].length) {
         //TODO: this is never called actually?
         if(pathDescription.size() > 2) {
             pathDescription.erase(pathDescription.begin());
             pathDescription[0].turnInstruction = TurnInstructions.HeadOn;
             pathDescription[0].necessary = true;
             startPhantom.nodeBasedEdgeNameID = pathDescription[0].nameID;
-            //            INFO("Deleting first turn instruction, ratio: " << startPhantom.ratio << ", length: " << pathDescription[0].length);
+            //            SimpleLogger().Write() << "Deleting first turn instruction, ratio: " << startPhantom.ratio << ", length: " << pathDescription[0].length;
         }
     } else {
         pathDescription[0].duration *= startPhantom.ratio;

@@ -1,77 +1,82 @@
 /*
-    open source routing machine
-    Copyright (C) Dennis Luxen, others 2010
 
-This program is free software; you can redistribute it and/or modify
-it under the terms of the GNU AFFERO General Public License as published by
-the Free Software Foundation; either version 3 of the License, or
-any later version.
+Copyright (c) 2013, Project OSRM, Dennis Luxen, others
+All rights reserved.
 
-This program is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-GNU General Public License for more details.
+Redistribution and use in source and binary forms, with or without modification,
+are permitted provided that the following conditions are met:
 
-You should have received a copy of the GNU Affero General Public License
-along with this program; if not, write to the Free Software
-Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
-or see http://www.gnu.org/licenses/agpl.txt.
- */
+Redistributions of source code must retain the above copyright notice, this list
+of conditions and the following disclaimer.
+Redistributions in binary form must reproduce the above copyright notice, this
+list of conditions and the following disclaimer in the documentation and/or
+other materials provided with the distribution.
+
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
+ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR
+ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
+(INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON
+ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+(INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+*/
 
 #ifndef VIAROUTEPLUGIN_H_
 #define VIAROUTEPLUGIN_H_
 
-#include <cstdlib>
-#include <fstream>
-#include <sstream>
-#include <string>
-#include <vector>
-
 #include "BasePlugin.h"
-#include "RouteParameters.h"
 
 #include "../Algorithms/ObjectToBase64.h"
-
-#include "../Descriptors/BaseDescriptor.h"
-#include "../Descriptors/GPXDescriptor.h"
-#include "../Descriptors/JSONDescriptor.h"
-
-#include "../DataStructures/HashTable.h"
 #include "../DataStructures/QueryEdge.h"
 #include "../DataStructures/StaticGraph.h"
 #include "../DataStructures/SearchEngine.h"
-
+#include "../Descriptors/BaseDescriptor.h"
+#include "../Descriptors/GPXDescriptor.h"
+#include "../Descriptors/JSONDescriptor.h"
+#include "../Server/DataStructures/QueryObjectsStorage.h"
+#include "../Util/SimpleLogger.h"
 #include "../Util/StringUtil.h"
 
-#include "../Server/DataStructures/QueryObjectsStorage.h"
+#include <boost/unordered_map.hpp>
+
+#include <cstdlib>
+
+#include <string>
+#include <vector>
 
 class ViaRoutePlugin : public BasePlugin {
 private:
     NodeInformationHelpDesk * nodeHelpDesk;
-    std::vector<std::string> & names;
     StaticGraph<QueryEdge::EdgeData> * graph;
     HashTable<std::string, unsigned> descriptorTable;
-    std::string pluginDescriptorString;
     SearchEngine * searchEnginePtr;
 public:
 
-    ViaRoutePlugin(QueryObjectsStorage * objects, std::string psd = "viaroute") : names(objects->names), pluginDescriptorString(psd) {
+    ViaRoutePlugin(QueryObjectsStorage * objects)
+     :
+        // objects(objects),
+        descriptor_string("viaroute")
+    {
         nodeHelpDesk = objects->nodeHelpDesk;
         graph = objects->graph;
 
-        searchEnginePtr = new SearchEngine(graph, nodeHelpDesk, names);
+        searchEnginePtr = new SearchEngine(objects);
 
-        descriptorTable.Set("", 0); //default descriptor
-        descriptorTable.Set("json", 0);
-        descriptorTable.Set("gpx", 1);
+        // descriptorTable.emplace(""    , 0);
+        descriptorTable.emplace("json", 0);
+        descriptorTable.emplace("gpx" , 1);
     }
 
     virtual ~ViaRoutePlugin() {
         delete searchEnginePtr;
     }
 
-    std::string GetDescriptor() const { return pluginDescriptorString; }
-    std::string GetVersionString() const { return std::string("0.3 (DL)"); }
+    const std::string & GetDescriptor() const { return descriptor_string; }
+
     void HandleRequest(const RouteParameters & routeParameters, http::Reply& reply) {
         //check number of parameters
         if( 2 > routeParameters.coordinates.size() ) {
@@ -93,14 +98,14 @@ public:
         std::vector<PhantomNode> phantomNodeVector(rawRoute.rawViaNodeCoordinates.size());
         for(unsigned i = 0; i < rawRoute.rawViaNodeCoordinates.size(); ++i) {
             if(checksumOK && i < routeParameters.hints.size() && "" != routeParameters.hints[i]) {
-//                INFO("Decoding hint: " << routeParameters.hints[i] << " for location index " << i);
-                DecodeObjectFromBase64(phantomNodeVector[i], routeParameters.hints[i]);
-                if(phantomNodeVector[i].isValid(nodeHelpDesk->getNumberOfNodes())) {
-//                    INFO("Decoded hint " << i << " successfully");
+//                SimpleLogger().Write() <<"Decoding hint: " << routeParameters.hints[i] << " for location index " << i;
+                DecodeObjectFromBase64(routeParameters.hints[i], phantomNodeVector[i]);
+                if(phantomNodeVector[i].isValid(nodeHelpDesk->GetNumberOfNodes())) {
+//                    SimpleLogger().Write() << "Decoded hint " << i << " successfully";
                     continue;
                 }
             }
-//            INFO("Brute force lookup of coordinate " << i);
+//            SimpleLogger().Write() << "Brute force lookup of coordinate " << i;
             searchEnginePtr->FindPhantomNodeForCoordinate( rawRoute.rawViaNodeCoordinates[i], phantomNodeVector[i], routeParameters.zoomLevel);
         }
 
@@ -111,7 +116,7 @@ public:
             rawRoute.segmentEndCoordinates.push_back(segmentPhantomNodes);
         }
         if( ( routeParameters.alternateRoute ) && (1 == rawRoute.segmentEndCoordinates.size()) ) {
-//            INFO("Checking for alternative paths");
+//            SimpleLogger().Write() << "Checking for alternative paths";
             searchEnginePtr->alternativePaths(rawRoute.segmentEndCoordinates[0],  rawRoute);
 
         } else {
@@ -120,7 +125,7 @@ public:
 
 
         if(INT_MAX == rawRoute.lengthOfShortestPath ) {
-            DEBUG( "Error occurred, single path not found" );
+            SimpleLogger().Write(logDEBUG) << "Error occurred, single path not found";
         }
         reply.status = http::Reply::ok;
 
@@ -132,7 +137,11 @@ public:
         }
 
         _DescriptorConfig descriptorConfig;
-        unsigned descriptorType = descriptorTable[routeParameters.outputFormat];
+
+        unsigned descriptorType = 0;
+        if(descriptorTable.find(routeParameters.outputFormat) != descriptorTable.end() ) {
+            descriptorType = descriptorTable.find(routeParameters.outputFormat)->second;
+        }
         descriptorConfig.z = routeParameters.zoomLevel;
         descriptorConfig.instructions = routeParameters.printInstructions;
         descriptorConfig.geometry = routeParameters.geometry;
@@ -155,10 +164,10 @@ public:
 
         PhantomNodes phantomNodes;
         phantomNodes.startPhantom = rawRoute.segmentEndCoordinates[0].startPhantom;
-//        INFO("Start location: " << phantomNodes.startPhantom.location)
+//        SimpleLogger().Write() << "Start location: " << phantomNodes.startPhantom.location;
         phantomNodes.targetPhantom = rawRoute.segmentEndCoordinates[rawRoute.segmentEndCoordinates.size()-1].targetPhantom;
-//        INFO("TargetLocation: " << phantomNodes.targetPhantom.location);
-//        INFO("Number of segments: " << rawRoute.segmentEndCoordinates.size());
+//        SimpleLogger().Write() << "TargetLocation: " << phantomNodes.targetPhantom.location;
+//        SimpleLogger().Write() << "Number of segments: " << rawRoute.segmentEndCoordinates.size();
         desc->SetConfig(descriptorConfig);
 
         desc->Run(reply, rawRoute, phantomNodes, *searchEnginePtr);
@@ -204,7 +213,6 @@ public:
                 reply.headers[2].name = "Content-Disposition";
                 reply.headers[2].value = "attachment; filename=\"route.json\"";
             }
-
             break;
         }
 
@@ -212,12 +220,7 @@ public:
         return;
     }
 private:
-    inline bool checkCoord(const _Coordinate & c) {
-        if(c.lat > 90*100000 || c.lat < -90*100000 || c.lon > 180*100000 || c.lon <-180*100000) {
-            return false;
-        }
-        return true;
-    }
+    std::string descriptor_string;
 };
 
 

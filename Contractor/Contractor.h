@@ -1,22 +1,29 @@
 /*
-    open source routing machine
-    Copyright (C) Dennis Luxen, others 2010
 
-This program is free software; you can redistribute it and/or modify
-it under the terms of the GNU AFFERO General Public License as published by
-the Free Software Foundation; either version 3 of the License, or
-any later version.
+Copyright (c) 2013, Project OSRM, Dennis Luxen, others
+All rights reserved.
 
-This program is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-GNU General Public License for more details.
+Redistribution and use in source and binary forms, with or without modification,
+are permitted provided that the following conditions are met:
 
-You should have received a copy of the GNU Affero General Public License
-along with this program; if not, write to the Free Software
-Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
-or see http://www.gnu.org/licenses/agpl.txt.
- */
+Redistributions of source code must retain the above copyright notice, this list
+of conditions and the following disclaimer.
+Redistributions in binary form must reproduce the above copyright notice, this
+list of conditions and the following disclaimer in the documentation and/or
+other materials provided with the distribution.
+
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
+ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR
+ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
+(INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON
+ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+(INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+*/
 
 #ifndef CONTRACTOR_H_INCLUDED
 #define CONTRACTOR_H_INCLUDED
@@ -29,6 +36,7 @@ or see http://www.gnu.org/licenses/agpl.txt.
 #include "../DataStructures/XORFastHash.h"
 #include "../DataStructures/XORFastHashStorage.h"
 #include "../Util/OpenMPWrapper.h"
+#include "../Util/SimpleLogger.h"
 #include "../Util/StringUtil.h"
 
 #include <boost/assert.hpp>
@@ -37,7 +45,6 @@ or see http://www.gnu.org/licenses/agpl.txt.
 #include <boost/make_shared.hpp>
 #include <boost/shared_ptr.hpp>
 
-#include <cfloat>
 #include <ctime>
 
 #include <algorithm>
@@ -124,7 +131,8 @@ public:
             BOOST_ASSERT_MSG( newEdge.data.distance > 0, "edge distance < 1" );
 #ifndef NDEBUG
             if ( newEdge.data.distance > 24 * 60 * 60 * 10 ) {
-                WARN("Edge weight large -> " << newEdge.data.distance);
+                SimpleLogger().Write(logWARNING) <<
+                    "Edge weight large -> " << newEdge.data.distance;
             }
 #endif
             edges.push_back( newEdge );
@@ -198,9 +206,9 @@ public:
         //            }
         //        }
         //
-        //        INFO("edges at node with id " << highestNode << " has degree " << maxdegree);
+        //        SimpleLogger().Write() << "edges at node with id " << highestNode << " has degree " << maxdegree;
         //        for(unsigned i = _graph->BeginEdges(highestNode); i < _graph->EndEdges(highestNode); ++i) {
-        //            INFO(" ->(" << highestNode << "," << _graph->GetTarget(i) << "); via: " << _graph->GetEdgeData(i).via);
+        //            SimpleLogger().Write() << " ->(" << highestNode << "," << _graph->GetTarget(i) << "); via: " << _graph->GetEdgeData(i).via;
         //        }
 
         //Create temporary file
@@ -430,19 +438,20 @@ public:
             //            avgdegree /= std::max((unsigned)1,(unsigned)remainingNodes.size() );
             //            quaddegree /= std::max((unsigned)1,(unsigned)remainingNodes.size() );
             //
-            //            INFO("rest: " << remainingNodes.size() << ", max: " << maxdegree << ", min: " << mindegree << ", avg: " << avgdegree << ", quad: " << quaddegree);
+            //            SimpleLogger().Write() << "rest: " << remainingNodes.size() << ", max: " << maxdegree << ", min: " << mindegree << ", avg: " << avgdegree << ", quad: " << quaddegree;
 
             p.printStatus(numberOfContractedNodes);
         }
-        BOOST_FOREACH(_ThreadData * data, threadData)
+        BOOST_FOREACH(_ThreadData * data, threadData) {
         	delete data;
+        }
         threadData.clear();
     }
 
     template< class Edge >
     inline void GetEdges( DeallocatingVector< Edge >& edges ) {
         Percent p (_graph->GetNumberOfNodes());
-        INFO("Getting edges of minimized graph");
+        SimpleLogger().Write() << "Getting edges of minimized graph";
         NodeID numberOfNodes = _graph->GetNumberOfNodes();
         if(_graph->GetNumberOfNodes()) {
             for ( NodeID node = 0; node < numberOfNodes; ++node ) {
@@ -474,7 +483,7 @@ public:
                         newEdge.data.id = data.id;
                     }
                     BOOST_ASSERT_MSG(
-                        newEdge.data.id <= INT_MAX, //2^31
+                        newEdge.data.id != INT_MAX, //2^31
                         "edge id invalid"
                     );
                     newEdge.data.forward = data.forward;
@@ -729,7 +738,7 @@ private:
             if ( priority > targetPriority )
                 return false;
             //tie breaking
-            if ( fabs(priority - targetPriority) < FLT_EPSILON && bias(node, target) ) {
+            if ( fabs(priority - targetPriority) < std::numeric_limits<double>::epsilon() && bias(node, target) ) {
                 return false;
             }
             neighbours.push_back( target );
@@ -751,7 +760,7 @@ private:
                 if ( priority > targetPriority)
                     return false;
                 //tie breaking
-                if ( fabs(priority - targetPriority) < FLT_EPSILON && bias(node, target) ) {
+                if ( fabs(priority - targetPriority) < std::numeric_limits<double>::epsilon() && bias(node, target) ) {
                     return false;
                 }
             }

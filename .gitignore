@@ -36,6 +36,8 @@ Thumbs.db
 # build related files #
 #######################
 /build/
+/Util/UUID.cpp
+/Util/GitDescription.cpp
 
 # Eclipse related files #
 #########################
@@ -72,6 +74,7 @@ stxxl.errlog
 /osrm-extract
 /osrm-routed
 /osrm-prepare
+/osrm-cli
 /nohup.out
 
 # Sandbox folder #
@@ -79,4 +82,7 @@ stxxl.errlog
 /sandbox/
 
 /test/profile.lua
-/profile.lua
+
+# Deprecated config file #
+##########################
+/server.ini

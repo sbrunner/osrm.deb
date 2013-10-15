@@ -1,3 +1,5 @@
+# Readme
+
 For instructions on how to compile and run OSRM, please consult the Wiki at
 
 https://github.com/DennisOSRM/Project-OSRM/wiki
@@ -6,8 +8,11 @@ or use our free and daily updated online service at
 
 http://map.project-osrm.org
 
-When using the code in a scientific publication, please cite
+## References in publications
 
+When using the code in a (scientific) publication, please cite
+
+```
 @inproceedings{luxen-vetter-2011,
  author = {Luxen, Dennis and Vetter, Christian},
  title = {Real-time routing with OpenStreetMap data},
@@ -23,5 +28,13 @@ When using the code in a scientific publication, please cite
  acmid = {2094062},
  publisher = {ACM},
  address = {New York, NY, USA},
-} 
+}
+```
 
+## Current build status
+
+| build config |  branch | status |
+|:-------------|:--------|:------------|
+| Project OSRM | master  | [![Build Status](https://travis-ci.org/DennisOSRM/Project-OSRM.png?branch=master)](https://travis-ci.org/DennisOSRM/Project-OSRM) |
+| Project OSRM | develop | [![Build Status](https://travis-ci.org/DennisOSRM/Project-OSRM.png?branch=develop)](https://travis-ci.org/DennisOSRM/Project-OSRM) |
+| LUAbind fork | master  | [![Build Status](https://travis-ci.org/DennisOSRM/luabind.png?branch=master)](https://travis-ci.org/DennisOSRM/luabind) |

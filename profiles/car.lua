@@ -1,7 +1,7 @@
 -- Begin of globals
 require("lib/access")
 
-barrier_whitelist = { ["cattle_grid"] = true, ["border_control"] = true, ["toll_booth"] = true, ["sally_port"] = true, ["gate"] = true, ["no"] = true}
+barrier_whitelist = { ["cattle_grid"] = true, ["border_control"] = true, ["toll_booth"] = true, ["sally_port"] = true, ["gate"] = true, ["no"] = true, ["entrance"] = true}
 access_tag_whitelist = { ["yes"] = true, ["motorcar"] = true, ["motor_vehicle"] = true, ["vehicle"] = true, ["permissive"] = true, ["designated"] = true  }
 access_tag_blacklist = { ["no"] = true, ["private"] = true, ["agricultural"] = true, ["forestry"] = true }
 access_tag_restricted = { ["destination"] = true, ["delivery"] = true }
@@ -29,16 +29,16 @@ speed_profile = {
 --  ["track"] = 5,
   ["ferry"] = 5,
   ["shuttle_train"] = 10,
-  ["default"] = 50
+  ["default"] = 10
 }
 
-take_minimum_of_speeds 	= false
-obey_oneway 			= true
-obey_bollards 			= true
-use_restrictions 		= true
-ignore_areas 			= true -- future feature
-traffic_signal_penalty 	= 2
-u_turn_penalty 			= 20
+take_minimum_of_speeds  = false
+obey_oneway 			      = true
+obey_bollards           =  true
+use_restrictions 		    = true
+ignore_areas 			      = true -- future feature
+traffic_signal_penalty  = 2
+u_turn_penalty 			    = 20
 
 -- End of globals
 
@@ -63,7 +63,7 @@ local function parse_maxspeed(source)
 end
 
 function node_function (node)
-  local barrier = node.tags:Find ("barrier")
+  local barrier = node.tags:Find("barrier")
   local access = Access.find_access_tag(node, access_tags_hierachy)
   local traffic_signal = node.tags:Find("highway")
 
@@ -85,7 +85,6 @@ function node_function (node)
 			node.bollard = true
 		end
 	end
-	return 1
 end
 
 
@@ -93,19 +92,19 @@ function way_function (way)
   -- we dont route over areas
   local area = way.tags:Find("area")
   if ignore_areas and ("yes" == area) then
-    return 0
+    return
   end
 
   -- check if oneway tag is unsupported
   local oneway = way.tags:Find("oneway")
   if "reversible" == oneway then
-    return 0
+    return
   end
 
   -- Check if we are allowed to access the way
   local access = Access.find_access_tag(way, access_tags_hierachy)
   if access_tag_blacklist[access] then
-    return 0
+    return
   end
 
   -- Second, parse the way according to these properties
@@ -182,16 +181,22 @@ function way_function (way)
 
   -- Set direction according to tags on way
   way.direction = Way.bidirectional
-  if obey_oneway then
+  if obey_oneway  then
 	  if oneway == "-1" then
 	    way.direction = Way.opposite
-    elseif oneway == "yes" or oneway == "1" or oneway == "true" or junction == "roundabout" or highway == "motorway_link" or highway == "motorway" then
-	    way.direction = Way.oneway
+    elseif oneway == "yes" or
+      oneway == "1" or
+      oneway == "true" or
+      junction == "roundabout" or
+      (highway == "motorway_link" and oneway ~="no") or
+      (highway == "motorway" and oneway ~= "no")
+      then
+	     way.direction = Way.oneway
     end
   end
 
   -- Override speed settings if explicit forward/backward maxspeeds are given
-  if maxspeed_forward ~= nil and maxspeed_forward > 0 then
+  if way.speed > 0 and maxspeed_forward ~= nil and maxspeed_forward > 0 then
     if Way.bidirectional == way.direction then
       way.backward_speed = way.speed
     end
@@ -205,9 +210,8 @@ function way_function (way)
   if ignore_in_grid[highway] ~= nil and ignore_in_grid[highway] then
 		way.ignore_in_grid = true
 	end
-
 	way.type = 1
-  return 1
+  return
 end
 
 -- These are wrappers to parse vectors of nodes and ways and thus to speed up any tracing JIT

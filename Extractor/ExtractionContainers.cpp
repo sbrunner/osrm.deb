@@ -1,26 +1,33 @@
 /*
- open source routing machine
- Copyright (C) Dennis Luxen, others 2010
 
- This program is free software; you can redistribute it and/or modify
- it under the terms of the GNU AFFERO General Public License as published by
- the Free Software Foundation; either version 3 of the License, or
- any later version.
+Copyright (c) 2013, Project OSRM, Dennis Luxen, others
+All rights reserved.
 
- This program is distributed in the hope that it will be useful,
- but WITHOUT ANY WARRANTY; without even the implied warranty of
- MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- GNU General Public License for more details.
+Redistribution and use in source and binary forms, with or without modification,
+are permitted provided that the following conditions are met:
 
- You should have received a copy of the GNU Affero General Public License
- along with this program; if not, write to the Free Software
- Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
- or see http://www.gnu.org/licenses/agpl.txt.
- */
+Redistributions of source code must retain the above copyright notice, this list
+of conditions and the following disclaimer.
+Redistributions in binary form must reproduce the above copyright notice, this
+list of conditions and the following disclaimer in the documentation and/or
+other materials provided with the distribution.
+
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
+ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR
+ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
+(INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON
+ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+(INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+*/
 
 #include "ExtractionContainers.h"
 
-void ExtractionContainers::PrepareData(const std::string & outputFileName, const std::string restrictionsFileName, const unsigned amountOfRAM) {
+void ExtractionContainers::PrepareData(const std::string & output_file_name, const std::string restrictionsFileName, const unsigned amountOfRAM) {
     try {
         unsigned usedNodeCounter = 0;
         unsigned usedEdgeCounter = 0;
@@ -111,26 +118,38 @@ void ExtractionContainers::PrepareData(const std::string & outputFileName, const
                 restrictionsIT->restriction.toNode = wayStartAndEndEdgeIT->firstStart;
             }
 
-            if(UINT_MAX != restrictionsIT->restriction.fromNode && UINT_MAX != restrictionsIT->restriction.toNode) {
+            if(
+                UINT_MAX != restrictionsIT->restriction.fromNode &&
+                UINT_MAX != restrictionsIT->restriction.toNode
+            ) {
                 ++usableRestrictionsCounter;
             }
             ++restrictionsIT;
         }
         std::cout << "ok, after " << get_timestamp() - time << "s" << std::endl;
-        INFO("usable restrictions: " << usableRestrictionsCounter );
+        SimpleLogger().Write() << "usable restrictions: " << usableRestrictionsCounter;
         //serialize restrictions
         std::ofstream restrictionsOutstream;
         restrictionsOutstream.open(restrictionsFileName.c_str(), std::ios::binary);
+        restrictionsOutstream.write((char*)&uuid, sizeof(UUID));
         restrictionsOutstream.write((char*)&usableRestrictionsCounter, sizeof(unsigned));
-        for(restrictionsIT = restrictionsVector.begin(); restrictionsIT != restrictionsVector.end(); ++restrictionsIT) {
-            if(UINT_MAX != restrictionsIT->restriction.fromNode && UINT_MAX != restrictionsIT->restriction.toNode) {
-                restrictionsOutstream.write((char *)&(restrictionsIT->restriction), sizeof(_Restriction));
+        for(
+            restrictionsIT = restrictionsVector.begin();
+            restrictionsIT != restrictionsVector.end();
+            ++restrictionsIT
+        ) {
+            if(
+                UINT_MAX != restrictionsIT->restriction.fromNode &&
+                UINT_MAX != restrictionsIT->restriction.toNode
+            ) {
+                restrictionsOutstream.write((char *)&(restrictionsIT->restriction), sizeof(TurnRestriction));
             }
         }
         restrictionsOutstream.close();
 
         std::ofstream fout;
-        fout.open(outputFileName.c_str(), std::ios::binary);
+        fout.open(output_file_name.c_str(), std::ios::binary);
+        fout.write((char*)&uuid, sizeof(UUID));
         fout.write((char*)&usedNodeCounter, sizeof(unsigned));
         time = get_timestamp();
         std::cout << "[extractor] Confirming/Writing used nodes     ... " << std::flush;
@@ -158,7 +177,7 @@ void ExtractionContainers::PrepareData(const std::string & outputFileName, const
 
         std::cout << "[extractor] setting number of nodes   ... " << std::flush;
         std::ios::pos_type positionInFile = fout.tellp();
-        fout.seekp(std::ios::beg);
+        fout.seekp(std::ios::beg+sizeof(UUID));
         fout.write((char*)&usedNodeCounter, sizeof(unsigned));
         fout.seekp(positionInFile);
 
@@ -270,37 +289,43 @@ void ExtractionContainers::PrepareData(const std::string & outputFileName, const
         fout.close();
         std::cout << "ok" << std::endl;
         time = get_timestamp();
-        std::cout << "[extractor] writing street name index ... " << std::flush;
-        std::string nameOutFileName = (outputFileName + ".names");
-        std::ofstream nameOutFile(nameOutFileName.c_str(), std::ios::binary);
-        unsigned sizeOfNameIndex = nameVector.size();
-        nameOutFile.write((char *)&(sizeOfNameIndex), sizeof(unsigned));
 
-        BOOST_FOREACH(const std::string & str, nameVector) {
-            unsigned lengthOfRawString = strlen(str.c_str());
-            nameOutFile.write((char *)&(lengthOfRawString), sizeof(unsigned));
-            nameOutFile.write(str.c_str(), lengthOfRawString);
+        std::cout << "[extractor] writing street name index ... " << std::flush;
+        std::string name_file_streamName = (output_file_name + ".names");
+        boost::filesystem::ofstream name_file_stream(
+            name_file_streamName,
+            std::ios::binary
+        );
+
+        const unsigned number_of_ways = name_list.size()+1;
+        name_file_stream.write((char *)&(number_of_ways), sizeof(unsigned));
+        unsigned name_lengths_prefix_sum = 0;
+        BOOST_FOREACH(const std::string & str, name_list) {
+            name_file_stream.write(
+                (char *)&(name_lengths_prefix_sum),
+                sizeof(unsigned)
+            );
+            name_lengths_prefix_sum += strlen(str.c_str());
+        }
+        name_file_stream.write(
+            (char *)&(name_lengths_prefix_sum),
+            sizeof(unsigned)
+        );
+        //duplicate on purpose!
+        name_file_stream.write((char *)&(name_lengths_prefix_sum), sizeof(unsigned));
+        BOOST_FOREACH(const std::string & str, name_list) {
+            const unsigned lengthOfRawString = strlen(str.c_str());
+            name_file_stream.write(str.c_str(), lengthOfRawString);
         }
 
-        nameOutFile.close();
+        name_file_stream.close();
         std::cout << "ok, after " << get_timestamp() - time << "s" << std::endl;
-
-        //        time = get_timestamp();
-        //        cout << "[extractor] writing address list      ... " << flush;
-        //
-        //        adressFileName.append(".address");
-        //        ofstream addressOutFile(adressFileName.c_str());
-        //        for(STXXLAddressVector::iterator it = adressVector.begin(); it != adressVector.end(); it++) {
-        //            addressOutFile << it->node.id << "|" << it->node.lat << "|" << it->node.lon << "|" << it->city << "|" << it->street << "|" << it->housenumber << "|" << it->state << "|" << it->country << "\n";
-        //        }
-        //        addressOutFile.close();
-        //        cout << "ok, after " << get_timestamp() - time << "s" << endl;
-
-        INFO("Processed " << usedNodeCounter << " nodes and " << usedEdgeCounter << " edges");
+        SimpleLogger().Write() <<
+            "Processed " << usedNodeCounter << " nodes and " << usedEdgeCounter << " edges";
 
 
     } catch ( const std::exception& e ) {
-      std::cerr <<  "Caught Execption:" << e.what() << std::endl;
+        std::cerr <<  "Caught Execption:" << e.what() << std::endl;
     }
 }
 
