@@ -3,14 +3,14 @@ Date: Mon, 2 Sep 2013 10:15:55 +0200
 Subject: [PATCH] add-cmake-install
 
 ---
- CMakeLists.txt |    7 +++++++
- 1 files changed, 7 insertions(+), 0 deletions(-)
+ CMakeLists.txt |    6 ++++++
+ 1 files changed, 6 insertions(+), 0 deletions(-)
 
 diff --git a/CMakeLists.txt b/CMakeLists.txt
-index 0d17236..4a21bd7 100644
+index 0d17236..2cd0a3a 100644
 --- a/CMakeLists.txt
 +++ b/CMakeLists.txt
-@@ -160,9 +160,16 @@ if(WITH_TOOLS)
+@@ -160,9 +160,15 @@ if(WITH_TOOLS)
  		target_link_libraries(
  			osrm-components ${GDAL_LIBRARIES} ${Boost_LIBRARIES} UUID
  		)
@@ -24,7 +24,6 @@ index 0d17236..4a21bd7 100644
 +
 +install(TARGETS osrm-extract RUNTIME DESTINATION bin)
 +install(TARGETS osrm-prepare RUNTIME DESTINATION bin)
-+install(TARGETS osrm-routed
-+    RUNTIME DESTINATION bin
-+    LIBRARY DESTINATION lib)
++install(TARGETS osrm-routed RUNTIME DESTINATION bin)
++install(TARGETS OSRM LIBRARY DESTINATION lib)
 -- 
