@@ -1,6 +1,7 @@
 debian/tmp/usr/bin/osrm-routed /usr/bin/
 debian/tmp/usr/bin/osrm-prepare /usr/bin/
 debian/tmp/usr/bin/osrm-extract /usr/bin/
+debian/tmp/usr/lib/libOSRM.so /usr/lib/
 debian/conffiles/server.ini /etc/osrm/
 debian/conffiles/extractor.ini /etc/osrm/
 debian/conffiles/contractor.ini /etc/osrm/
